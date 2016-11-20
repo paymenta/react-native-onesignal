@@ -36,7 +36,7 @@ Notifications.configure = function(options: Object) {
 
 		if (_pendingNotifications.length > 0) {
 			var notification = _pendingNotifications.pop();
-			this._onNotificationOpened(notification.message, notification.data, notification.isActive);
+			this._onNotificationOpened(notification.result);
 		}
 	}
 
@@ -108,13 +108,13 @@ Notifications.checkPermissions = function(callback: Function) {
 	}
 };
 
-Notifications._onNotificationOpened = function(message, data, isActive) {
+Notifications._onNotificationOpened = function(result) {
 	if ( this.onNotificationOpened === false ) {
-		var notification = {message: message, data: data, isActive: isActive};
+		var notification = {result: result};
 		_pendingNotifications.push(notification);
 		return;
 	}
-	this.onNotificationOpened(message, data, isActive);
+	this.onNotificationOpened(result);
 };
 
 Notifications._onNotificationsRegistered = function(payload) {
@@ -208,8 +208,8 @@ Notifications.idsAvailable = function(idsAvailable) {
 	console.log('Please use the onIdsAvailable event instead, it can be defined in the register options');
 };
 
-DeviceEventEmitter.addListener(DEVICE_NOTIF_EVENT, function(notifData) {
-	var message = notifData.message;
+DeviceEventEmitter.addListener(DEVICE_NOTIF_EVENT, function(result) {
+	/*var message = notifData.message;
 	var data = null;
 	if (notifData.additionalData != null && notifData.additionalData != '{}') {
 		if (typeof notifData.additionalData === 'object') {
@@ -218,8 +218,8 @@ DeviceEventEmitter.addListener(DEVICE_NOTIF_EVENT, function(notifData) {
 			data = JSON.parse(notifData.additionalData);	
 		}
     	}
-	var isActive = notifData.isActive;
-	Notifications._onNotificationOpened(message, data, isActive);
+	var isActive = notifData.isActive;*/
+	Notifications._onNotificationOpened(result);
 });
 
 DeviceEventEmitter.addListener(DEVICE_NOTIF_REG_EVENT, function(notifData) {

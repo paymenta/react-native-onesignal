@@ -31,21 +31,45 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
 
     private ReactContext mReactContext;
 
+    public void forceAppFocusStatus() {
+        try {
+            java.lang.reflect.Method onAppFocus = OneSignal.class.getDeclaredMethod("onAppFocus");
+            onAppFocus.setAccessible(true);
+            onAppFocus.invoke(null);
+            java.lang.reflect.Method isAppActive = OneSignal.class.getDeclaredMethod("isAppActive");
+            isAppActive.setAccessible(true);
+            boolean isActive = (boolean)isAppActive.invoke(null);
+            Log.i("ReactNativeJS", "OneSignal isAppActive: " + isActive);
+        } catch (java.lang.NoSuchMethodException x) {
+            x.printStackTrace();
+        } catch (java.lang.IllegalAccessException x) {
+            x.printStackTrace();
+        } catch (java.lang.reflect.InvocationTargetException x) {
+            x.printStackTrace();
+        }
+    }
+
     public RNOneSignal(ReactApplicationContext reactContext) {
         super(reactContext);
         mReactContext = reactContext;
         mReactContext.addLifecycleEventListener(this);
         OneSignal.startInit(mReactContext)
                 .setNotificationOpenedHandler(new NotificationOpenedHandler(mReactContext))
+                .setNotificationReceivedHandler(new NotificationReceivedHandler(mReactContext))
                 .init();
-        OneSignal.enableNotificationsWhenActive(false);
+        forceAppFocusStatus();
+        //OneSignal.setInFocusDisplaying(0);
         registerNotificationsReceiveNotification();
     }
 
     private void sendEvent(String eventName, Object params) {
+        try {
         mReactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
+        }
+        catch (Exception e) {
+        }
     }
 
     @ReactMethod
@@ -70,6 +94,7 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
 
     @ReactMethod
     public void configure() {
+        forceAppFocusStatus();
         OneSignal.idsAvailable(new OneSignal.IdsAvailableHandler() {
             public void idsAvailable(String userId, String registrationId) {
                 final WritableMap params = Arguments.createMap();
@@ -97,7 +122,7 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
         OneSignal.enableSound(enable);
     }
 
-    @ReactMethod
+    /*@ReactMethod
     public void enableNotificationsWhenActive(Boolean enable) {
         OneSignal.enableNotificationsWhenActive(enable);
     }
@@ -105,7 +130,7 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
     @ReactMethod
     public void enableInAppAlertNotification(Boolean enable) {
         OneSignal.enableInAppAlertNotification(enable);
-    }
+    }*/
 
     @ReactMethod
     public void setSubscription(Boolean enable) {
@@ -159,9 +184,10 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
 
     private void notifyNotification(Bundle bundle) {
         final WritableMap params = Arguments.createMap();
-        params.putString("message", bundle.getString("message"));
-        params.putString("additionalData", bundle.getString("additionalData"));
-        params.putBoolean("isActive", bundle.getBoolean("isActive"));
+        params.putString("result", bundle.getString("result"));
+        //params.putString("message", bundle.getString("message"));
+        //params.putString("additionalData", bundle.getString("additionalData"));
+        //params.putBoolean("isActive", bundle.getBoolean("isActive"));
 
         sendEvent("remoteNotificationOpened", params);
     }
@@ -174,6 +200,7 @@ public class RNOneSignal extends ReactContextBaseJavaModule implements Lifecycle
     @Override
     public void onHostDestroy() {
         OneSignal.removeNotificationOpenedHandler();
+        OneSignal.removeNotificationReceivedHandler();
     }
 
     @Override
